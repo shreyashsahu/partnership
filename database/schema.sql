@@ -1,0 +1,11 @@
+-- Optional Supabase PostgreSQL schema. Run in Supabase SQL Editor.
+create table if not exists profiles (id uuid primary key references auth.users(id) on delete cascade, full_name text, phone text, created_at timestamptz default now());
+create table if not exists products (id text primary key, name text not null, category text not null, price numeric not null, image text, material text, weight text, rating numeric default 0, description text, created_at timestamptz default now());
+create table if not exists orders (id text primary key, customer_id uuid references auth.users(id), customer_name text, phone text, email text, address text, city text, state text, pin text, total numeric, payment_status text default 'Pending', order_status text default 'Pending', created_at timestamptz default now());
+create table if not exists order_items (id bigint generated always as identity primary key, order_id text references orders(id) on delete cascade, product_id text, product_name text, quantity int not null, price numeric not null);
+create table if not exists wishlist (id bigint generated always as identity primary key, user_id uuid references auth.users(id) on delete cascade, product_id text, created_at timestamptz default now());
+create table if not exists reviews (id bigint generated always as identity primary key, user_id uuid references auth.users(id), product_id text, customer_name text, rating int, review_text text, approved boolean default false, created_at timestamptz default now());
+create table if not exists appointments (id text primary key, user_id uuid references auth.users(id), name text, email text, phone text, preferred_date date, preferred_time time, jewellery_interest text, message text, status text default 'Pending', created_at timestamptz default now());
+create table if not exists custom_jewellery_requests (id text primary key, user_id uuid references auth.users(id), name text, email text, phone text, type text, metal text, gemstone text, size text, style text, budget text, description text, status text default 'Pending', created_at timestamptz default now());
+create table if not exists contact_messages (id text primary key, name text, email text, phone text, message text, created_at timestamptz default now());
+-- Enable RLS in Supabase and add policies appropriate to your authenticated roles before production use.
