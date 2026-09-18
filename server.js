@@ -76,6 +76,36 @@ app.post('/api/admin/signup',(req,res)=>{
   s.owner={username:String(username).trim(),passwordHash:hashPassword(password),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};writeStore(s);
   const token=makeToken();sessions.set(token,{username:s.owner.username,createdAt:Date.now()});setSessionCookie(res,token);res.status(201).json({ok:true,username:s.owner.username});
 });
+app.post('/api/admin/reset-owner',(req,res)=>{
+  const {resetKey,newUsername,newPassword}=req.body||{};
+  const key=process.env.OWNER_RESET_KEY;
+
+  if(!key || resetKey!==key)
+    return res.status(403).json({message:'Invalid reset key.'});
+
+  if(!newUsername || String(newUsername).trim().length<3)
+    return res.status(400).json({message:'Username must be at least 3 characters.'});
+
+  if(!newPassword || String(newPassword).length<8)
+    return res.status(400).json({message:'Password must be at least 8 characters.'});
+
+  const s=readStore();
+
+  s.owner={
+    username:String(newUsername).trim(),
+    passwordHash:hashPassword(newPassword),
+    createdAt:s.owner?.createdAt||new Date().toISOString(),
+    updatedAt:new Date().toISOString()
+  };
+
+  writeStore(s);
+
+  res.json({
+    ok:true,
+    message:'Owner account reset successfully.',
+    username:s.owner.username
+  });
+});
 app.post('/api/admin/login',(req,res)=>{const {username,password}=req.body||{};const owner=currentOwner();if(!owner)return res.status(428).json({message:'Owner setup is required first.'});if(String(username||'')!==owner.username||!verifyPassword(password,owner.passwordHash))return res.status(401).json({message:'Invalid owner credentials.'});const token=makeToken();sessions.set(token,{username:owner.username,createdAt:Date.now()});setSessionCookie(res,token);res.json({ok:true,username:owner.username});});
 app.post('/api/admin/logout',(req,res)=>{const token=cookieParse(req).shivira_admin;if(token)sessions.delete(token);res.setHeader('Set-Cookie','shivira_admin=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');res.json({ok:true});});
 app.get('/api/admin/me',requireAdmin,(req,res)=>res.json({ok:true,username:req.owner.username}));
